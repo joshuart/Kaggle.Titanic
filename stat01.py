@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import statsmodels.formula.api as sm
 from sklearn.ensemble import RandomForestClassifier
+import csv
 import math
 
 
@@ -78,7 +79,35 @@ test['male'] = (test['Sex'] == 'male') + 0
 test['pLogit'] = np.dot(test[['constant','male','c2', 'c3', 'Age', 'SibSp', 'SibSpSq']].as_matrix(), logitBetas)
 test['prob'] = np.exp(test['pLogit']) / (1 + np.exp(test['pLogit']))
 test['pred'] = (test['prob'] > .5) + 0
-
+output = test['pred'].values
+ids = test['PassengerId'].values
 
 #Impliment a random forest
 
+train['c2'] = (train['Pclass'] == 2) + 0
+train['c3'] = (train['Pclass'] == 3) + 0
+train['male'] = (train['Sex'] == 'male') + 0
+train = train[['Survived','male', 'c2','c3', 'Age', 'SibSp', 'SibSpSq']]
+test = test[['male', 'c2','c3', 'Age', 'SibSp', 'SibSpSq']]
+trainNP = train.values
+testNP = test.values
+
+print "Trianing..."
+forest = RandomForestClassifier(n_estimators=100)
+forest = forest.fit(trainNP[0::,1::], trainNP[0::,0])
+
+print "Predicting..."
+output2 = forest.predict(testNP).astype(int)
+
+predictions_file = open("/Volumes/KINGSTON/Competitive Data Science/Kaggle/Titanic/myfirstforest.csv", "wb")
+open_file_object = csv.writer(predictions_file)
+open_file_object.writerow(["PassengerId","Survived"])
+open_file_object.writerows(zip(ids, output2))
+predictions_file.close()
+
+predictions_file = open("/Volumes/KINGSTON/Competitive Data Science/Kaggle/Titanic/logit.csv", "wb")
+open_file_object = csv.writer(predictions_file)
+open_file_object.writerow(["PassengerId","Survived"])
+open_file_object.writerows(zip(ids, output))
+predictions_file.close()
+print 'Done.'
